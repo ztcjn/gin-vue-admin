@@ -4,4 +4,5 @@ type ApiGroup struct {
 	ShopOrdersApi
 	ShopGoodsApi
 	ShopQrcodeApi
+	ShopConfigApi
 }

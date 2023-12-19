@@ -6,14 +6,14 @@ import (
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/response"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/shop/request"
 	"github.com/flipped-aurora/gin-vue-admin/server/service"
+	"github.com/flipped-aurora/gin-vue-admin/server/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/go-pay/gopay/wechat/v3"
 	"go.uber.org/zap"
+	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -33,18 +33,38 @@ var shopQrcodeService = service.ServiceGroupApp.ShopServiceGroup.ShopQrcodeServi
 // @accept application/json
 // @Produce application/json
 // @Param data body shop.ShopQrcodeRouter true "支付预下单"
-// @Success 200 {string} string "{"success":true,"data":{},"msg":"创建成功","serverTime":"2023-12-06 23:03:00"}
+// @Success 200 {string} map {"success":true,"data":{},"msg":"创建成功","serverTime":"2023-12-06 23:03:00"}
 // @Router /api/mht/createShopOrders [post]
 func (shopQrcodeApi *ShopQrcodeApi) CreateShopQrcode(c *gin.Context) {
 	//ts=1702434294592&amp;key=539000891&amp;patternId=13&amp;macid=ZZ9KDT845Z
-	body, err := c.GetRawData() //获取请求参数body原始数据
+
+	// 读取请求的 body 数据
+	bodyBytes, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		global.GVA_LOG.Error("失败!", zap.Error(err))
 		response.FailWithMessage("请求参数有误", c)
 		return
 	}
+	//从配置表读取配置 用来判断是走自己的支付还是汇联支付
+	shopconfig, err := shopConfigService.GetShopConfig(1)
+	if err != nil {
+		global.GVA_LOG.Error("失败!", zap.Error(err))
+		response.FailWithMessage("请求参数有误", c)
+		return
+	}
+	if *shopconfig.Mode == "1" {
+		post, err := utils.HttpPost("https://w.hxt5.cn/api/shj/pay_qrCode", string(bodyBytes))
+		if err != nil {
+			global.GVA_LOG.Error("失败", zap.Error(err))
+			response.FailWithMessage(err.Error(), c)
+			return
+		}
+		response.ResultCandy(post, c)
+		return
+	}
+	//=======================下面走自己的支付
 	//替换请求里面的多余参数
-	str := strings.ReplaceAll(string(body), "&amp;", "&")
+	str := strings.ReplaceAll(string(bodyBytes), "&amp;", "&")
 	// 将字符串转换为 map 格式
 	query, err := url.ParseQuery(str)
 	if err != nil {
@@ -52,6 +72,7 @@ func (shopQrcodeApi *ShopQrcodeApi) CreateShopQrcode(c *gin.Context) {
 		response.FailWithMessage("请求参数有误", c)
 		return
 	}
+
 	//var plug request.RequestMhtData
 	plug := request.RequestMhtData{
 		Macid:     query.Get("macid"),
@@ -68,8 +89,7 @@ func (shopQrcodeApi *ShopQrcodeApi) CreateShopQrcode(c *gin.Context) {
 		response.FailWithMessage("预下单失败,请检查参数", c)
 	} else {
 		//global.GVA_REDIS.Set(context.Background(), "", url, timer)
-		ts := time.Now().Format(time.DateTime)
-		response.WxQrCode(urls, wechat.TradeStateSuccess, ts, c)
+		response.WxQrCode(urls, wechat.TradeStateSuccess, c)
 	}
 }
 
@@ -117,19 +137,37 @@ func (shopQrcodeApi *ShopQrcodeApi) GetOpenId(c *gin.Context) {
 // @Security ApiKeyAuth
 // @accept application/json
 // @Produce application/json
-// @Param data body shop.ShopQrcodeRouter true "支付预下单"
+// @Param data body shop.ShopQrcodeRouter true "查询订单"
 // @Success 302 {string} string "{"success":true,"data":{},"msg":"创建成功"}"
 // @Router /api/mht/QueryOrder [post]
 func (shopQrcodeApi *ShopQrcodeApi) QueryOrder(c *gin.Context) {
 	//ts=1702434294592&amp;key=539000891&amp;patternId=13&amp;macid=ZZ9KDT845Z
-	body, err := c.GetRawData() //获取请求参数body原始数据
+	bodyBytes, err := io.ReadAll(c.Request.Body) //获取请求参数body原始数据
 	if err != nil {
 		global.GVA_LOG.Error("失败!", zap.Error(err))
 		response.FailWithMessage("请求参数有误", c)
 		return
 	}
+	//从配置表读取配置 用来判断是走自己的支付还是汇联支付
+	shopconfig, err := shopConfigService.GetShopConfig(1)
+	if err != nil {
+		global.GVA_LOG.Error("失败!", zap.Error(err))
+		response.FailWithMessage("请求参数有误", c)
+		return
+	}
+	if *shopconfig.Mode == "1" {
+		post, err := utils.HttpPost("https://w.hxt5.cn/api/shj/QueryOrder", string(bodyBytes))
+		if err != nil {
+			global.GVA_LOG.Error("失败", zap.Error(err))
+			response.FailWithMessage(err.Error(), c)
+			return
+		}
+		response.ResultCandy(post, c)
+		return
+	}
+	//==========================下面是走自己的支付
 	//替换请求里面的多余参数
-	str := strings.ReplaceAll(string(body), "&amp;", "&")
+	str := strings.ReplaceAll(string(bodyBytes), "&amp;", "&")
 	// 将字符串转换为 map 格式
 	query, err := url.ParseQuery(str)
 	if err != nil {
@@ -141,12 +179,11 @@ func (shopQrcodeApi *ShopQrcodeApi) QueryOrder(c *gin.Context) {
 	plug := request.RequestMhtData{
 		OutTreadNo: query.Get("outTreadNo"),
 	}
-	ts := strconv.FormatInt(time.Now().UnixNano()/int64(time.Millisecond), 10)
 	if n, err := shopQrcodeService.ServiceQueryOrders(&plug); err != nil {
 		global.GVA_LOG.Error("查询订单失败", zap.Error(err))
-		response.FailMhtQueryOrder(n, "订单还未支付", "F", ts, c)
+		response.FailMhtQueryOrder(n, "订单还未支付", "F", c)
 	} else {
-		response.OkMhtQueryOrder(n, "支付成功", "S", ts, c)
+		response.OkMhtQueryOrder(n, "支付成功", "S", c)
 	}
 }
 

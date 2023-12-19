@@ -8,9 +8,7 @@ import (
 	shopReq "github.com/flipped-aurora/gin-vue-admin/server/model/shop/request"
 	alipay "github.com/flipped-aurora/gin-vue-admin/server/plugin/alipay/service"
 	wxpay "github.com/flipped-aurora/gin-vue-admin/server/plugin/wxpay/service"
-	"github.com/flipped-aurora/gin-vue-admin/server/service/system"
 	"github.com/flipped-aurora/gin-vue-admin/server/utils"
-	"github.com/gin-gonic/gin"
 )
 
 type ShopOrdersService struct {
@@ -130,22 +128,4 @@ func (shopOrdersService *ShopOrdersService) GetShopOrdersInfoList(info shopReq.S
 	}
 	err = db.Find(&shopOrderss).Error
 	return shopOrderss, total, err
-}
-
-// getUserInfo
-// @Tags      SysUser
-// @Summary   获取用户信息
-// @Security  ApiKeyAuth
-// @accept    application/json
-// @Produce   application/json
-// @Success   200  {object}  response.Response{data=map[string]interface{},msg=string}  "获取用户信息"
-// @Router    /user/getUserInfo [get]
-func getUserInfo(c *gin.Context) uint {
-	uuid := utils.GetUserUuid(c)
-	var user system.UserService
-	ReqUser, err := user.GetUserInfo(uuid)
-	if err != nil {
-		return 0
-	}
-	return ReqUser.ID
 }

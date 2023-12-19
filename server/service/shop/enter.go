@@ -4,4 +4,5 @@ type ServiceGroup struct {
 	ShopOrdersService
 	ShopGoodsService
 	ShopQrcodeService
+	ShopConfigService
 }

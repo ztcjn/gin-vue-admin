@@ -39,7 +39,7 @@ func (ShopQrcodeService *ShopQrcodeService) ServiceCreateOrders(req *request.Req
 	if err != nil {
 		return nil, err
 	}
-	aToken := fmt.Sprintf("%s/api/mht/openId?attach=%s,%d,%s,%d,1226862,1369596012470", global.GVA_CONFIG.AliPay.Load, goods.GoodsMacid, goods.ID, tradeNo, total)
+	aToken := fmt.Sprintf("%s/api/mht/openId?attach=%s,%d,%s,%d,1226862,1369596012470", global.GVA_CONFIG.WxPay.Load, goods.GoodsMacid, goods.ID, tradeNo, total)
 	bm := make(gopay.BodyMap).
 		Set("payQr", aToken).
 		Set("agencyNo", "1226862").

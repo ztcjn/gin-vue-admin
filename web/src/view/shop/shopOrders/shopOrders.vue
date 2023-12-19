@@ -96,7 +96,7 @@
           </template>
         </el-popover>
       </div>
-      <el-table ref="multipleTable" style="width: 100%" tooltip-effect="dark" :data="tableData" row-key="ID" 
+      <el-table ref="multipleTable" style="width: 100%" tooltip-effect="dark" :data="tableData" row-key="ID"
         @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" />
         <el-table-column align="left" label="日期" width="160">
@@ -147,9 +147,11 @@
               </el-icon>
               查看详情
             </el-button>
-            <el-button type="primary" link icon="edit" class="table-button" @click="updateShopOrdersFunc(scope.row)">变更</el-button>
+            <el-button type="primary" link icon="edit" class="table-button"
+              @click="updateShopOrdersFunc(scope.row)">变更</el-button>
             <el-button type="primary" link icon="delete" @click="deleteRow(scope.row)">删除</el-button>
-            <el-button type="primary" link icon="edit" class="table-button" @click="RefundShopOrdersFunc(scope.row)">退款</el-button>
+            <el-button type="primary" link icon="edit" class="table-button"
+              @click="RefundShopOrdersFunc(scope.row)">退款</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -342,8 +344,8 @@
 <script setup>
 //按钮控制
 import { useBtnAuth } from '@/utils/btnAuth'
-    const btnAuth = useBtnAuth()
-    
+const btnAuth = useBtnAuth()
+
 import {
   createShopOrders,
   deleteShopOrders,
@@ -545,10 +547,10 @@ const updateShopOrdersFunc = async (row) => {
 
 // 退款订单
 const RefundShopOrdersFunc = async (row) => {
-  const res = await RefundShopOrders({ OutTradeNo: row.OutTradeNo})
+  const res = await RefundShopOrders({ OutTradeNo: row.OutTradeNo })
   type.value = 'update'
   if (res.code === 0) {
-     ElMessage({
+    ElMessage({
       type: 'success',
       message: res.msg
     })

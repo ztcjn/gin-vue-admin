@@ -1,8 +1,7 @@
 package utils
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/shop"
@@ -10,7 +9,6 @@ import (
 	"github.com/go-pay/gopay/wechat/v3"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -36,10 +34,9 @@ const (
 )
 
 var (
-	lastTimestamp int64  // 上次生成订单号的时间戳
-	counter       uint32 // 当前时间戳内已经生成的订单数
-	//nodeID        uint32     = 1 // 全局唯一节点 ID（示例值，根据实际情况进行赋值）
-	mutex sync.Mutex // 互斥锁
+	lastTimestamp int64      // 上次生成订单号的时间戳
+	counter       uint32     // 当前时间戳内已经生成的订单数
+	mutex         sync.Mutex // 互斥锁
 )
 
 // GetOrderNumber 生成订单号15位
@@ -100,43 +97,55 @@ func SetNotifyData(order *shop.ShopOrders, decode *wechat.V3DecryptResult) {
 
 }
 
-func HttpPost(url, outTradeNo string, code int) {
-	data := make(map[string]string)
-	data["tradeno"] = outTradeNo
-	data["code"] = strconv.Itoa(code)
-	bytesData, _ := json.Marshal(data)
-	client := &http.Client{}
-	rep, _ := http.NewRequest("POST", url, bytes.NewReader(bytesData))
-	rep.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resq, _ := client.Do(rep)
-	if resq != nil {
-		defer resq.Body.Close()
-	}
-	return
-}
+func HttpPost(url string, data string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-func HttpGet(url string) string {
-	// 创建一个HTTP客户端
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(data))
 	if err != nil {
-		fmt.Println("创建请求时发生错误:", err)
-		return ""
+		return "", fmt.Errorf("创建请求时发生错误: %v", err)
 	}
-	// 发送请求并获取响应
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("发送请求时发生错误:", err)
-		return ""
+		return "", fmt.Errorf("发送请求时发生错误: %v", err)
 	}
 	defer resp.Body.Close()
-	// 读取响应的内容
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("读取响应时发生错误:", err)
-		return ""
+		return "", fmt.Errorf("读取响应时发生错误: %v", err)
 	}
-	return string(body)
+	return string(body), nil
+}
+
+func HttpGet(url string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client := &http.Client{}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", fmt.Errorf("创建请求时发生错误: %v", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("发送请求时发生错误: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("请求返回非200状态码: %s", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("读取响应时发生错误: %v", err)
+	}
+	return string(body), nil
 }
 
 // ReplaceAttach 处理棉花糖机器的附加参数

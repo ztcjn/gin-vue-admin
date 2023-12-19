@@ -86,7 +86,9 @@ func Routers() *gin.Engine {
 		shopRouter := router.RouterGroupApp.Shop
 		shopRouter.InitShopOrdersRouter(PrivateGroup)
 		shopRouter.InitShopGoodsRouter(PrivateGroup)
-		shopRouter.InitShopQrcodeRecode(PublicGroup) //获取二维码地址 不鉴权
+		shopRouter.InitShopQrcodeRecode(PublicGroup)
+		shopRouter. //获取二维码地址 不鉴权
+				InitShopConfigRouter(PrivateGroup)
 	}
 
 	global.GVA_LOG.Info("router register success")

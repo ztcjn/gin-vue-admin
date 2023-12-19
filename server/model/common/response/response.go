@@ -3,6 +3,8 @@ package response
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 type ResQueryOrder struct {
@@ -62,6 +64,12 @@ func ResultWx(code int, data interface{}, msg, ServerTime string, c *gin.Context
 	})
 }
 
+func ResultCandy(data string, c *gin.Context) {
+	// 开始时间
+	//c.JSON(http.StatusOK, data)
+	c.String(http.StatusOK, data)
+}
+
 func ResultWxOK(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
@@ -102,26 +110,29 @@ func OkWxCall(c *gin.Context) {
 	ResultWxOK(c)
 }
 
-func WxQrCode(data interface{}, message, serverTime string, c *gin.Context) {
-	ResultWx(SUCCESS, data, message, serverTime, c)
+func WxQrCode(data interface{}, message string, c *gin.Context) {
+	ts := time.Now().Format(time.DateTime)
+	ResultWx(SUCCESS, data, message, ts, c)
 }
 
-func OkMhtQueryOrder(code int, tradeStatus, status, time string, c *gin.Context) {
+func OkMhtQueryOrder(code int, tradeStatus, status string, c *gin.Context) {
 	//{"code":0,"tradeStatus":"支付成功","status":"S","timestamp":"1699067811355"}
+	ts := strconv.FormatInt(time.Now().UnixNano()/int64(time.Millisecond), 10)
 	c.JSON(http.StatusOK, ResQueryOrder{
 		Code:        code,
 		TradeStatus: tradeStatus,
 		Status:      status,
-		Timestamp:   time,
+		Timestamp:   ts,
 	})
 }
 
-func FailMhtQueryOrder(code int, tradeStatus, status, time string, c *gin.Context) {
+func FailMhtQueryOrder(code int, tradeStatus, status string, c *gin.Context) {
 	//{"code":0,"tradeStatus":"支付成功","status":"S","timestamp":"1699067811355"}
+	ts := strconv.FormatInt(time.Now().UnixNano()/int64(time.Millisecond), 10)
 	c.JSON(http.StatusOK, ResQueryOrder{
 		Code:        code,
 		TradeStatus: tradeStatus,
 		Status:      status,
-		Timestamp:   time,
+		Timestamp:   ts,
 	})
 }

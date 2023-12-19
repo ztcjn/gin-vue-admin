@@ -28,7 +28,7 @@ type WxPay struct{}
 // @Summary 微信获取code JsApi支付
 // @Produce  application/json
 // @Success 200 {string} string "{"success":true,"data":{},"msg":"发送成功"}"
-// @Router /wxpay/routerName [get]
+// @Router /wxpay/getcode [get]
 func (p *WxPay) WxApiGetCode(c *gin.Context) {
 	var plug *request.JsapiGetToken
 	err := c.ShouldBindQuery(&plug)
@@ -50,7 +50,7 @@ func (p *WxPay) WxApiGetCode(c *gin.Context) {
 // @Summary 微信获取token
 // @Produce  application/json
 // @Success 200 {string} string "{"success":true,"data":{},"msg":"发送成功"}"
-// @Router /wxpay/routerName [get]
+// @Router /wxpay/gettoken [get]
 func (p *WxPay) WxApiGetToken(c *gin.Context) {
 	var plug *request.JsapiGetToken
 	err := c.ShouldBindQuery(&plug)
@@ -61,7 +61,12 @@ func (p *WxPay) WxApiGetToken(c *gin.Context) {
 	}
 	cfg := global.GVA_CONFIG.WxPay
 	sprintf := fmt.Sprintf(TokenUrl, cfg.AppID, cfg.Secret, plug.Code)
-	str := utils.HttpGet(sprintf)
+	str, err := utils.HttpGet(sprintf)
+	if err != nil {
+		global.GVA_LOG.Error("请求失败", zap.Error(err))
+		response.FailWithMessage("请求失败", c)
+		return
+	}
 	var token AccessToken
 	err = json.Unmarshal([]byte(str), &token)
 	if err != nil {
@@ -86,7 +91,7 @@ func (p *WxPay) WxApiGetToken(c *gin.Context) {
 // @Summary 微信获取code JsApi支付 自定义金额
 // @Produce  application/json
 // @Success 200 {string} string "{"success":true,"data":{},"msg":"发送成功"}"
-// @Router /wxpay/routerName [get]
+// @Router /wxpay/topaycode [get]
 func (p *WxPay) WxApiToPayCode(c *gin.Context) {
 	var cfg = global.GVA_CONFIG.WxPay
 	st := fmt.Sprintf("%s/api/wxpay/topaytoken?", cfg.Load)
@@ -101,7 +106,7 @@ func (p *WxPay) WxApiToPayCode(c *gin.Context) {
 // @Summary 微信获取token 自定义金额
 // @Produce  application/json
 // @Success 200 {string} string "{"success":true,"data":{},"msg":"发送成功"}"
-// @Router /wxpay/routerName [get]
+// @Router /wxpay/topaytoken [get]
 func (p *WxPay) WxApiToPayToken(c *gin.Context) {
 	var plug *request.JsapiGetToken
 	err := c.ShouldBindQuery(&plug)
@@ -113,7 +118,12 @@ func (p *WxPay) WxApiToPayToken(c *gin.Context) {
 
 	cfg := global.GVA_CONFIG.WxPay
 	sprintf := fmt.Sprintf(TokenUrl, cfg.AppID, cfg.Secret, plug.Code)
-	str := utils.HttpGet(sprintf)
+	str, err := utils.HttpGet(sprintf)
+	if err != nil {
+		global.GVA_LOG.Error("请求失败", zap.Error(err))
+		response.FailWithMessage("请求失败", c)
+		return
+	}
 	var token AccessToken
 	err = json.Unmarshal([]byte(str), &token)
 	if err != nil {
@@ -138,7 +148,7 @@ func (p *WxPay) WxApiToPayToken(c *gin.Context) {
 // @Summary 微信获取下单接口 Native支付
 // @Produce  application/json
 // @Success 200 {string} string "{"success":true,"data":{},"msg":"发送成功"}"
-// @Router /wxpay/routerName [post]
+// @Router /wxpay/native [post]
 func (p *WxPay) WxApiNativeCode(c *gin.Context) {
 	var plug request.Native
 	err := c.ShouldBindQuery(&plug)
@@ -163,7 +173,7 @@ func (p *WxPay) WxApiNativeCode(c *gin.Context) {
 // @Summary 微信获取下单接口 JsApi支付
 // @Produce  application/json
 // @Success 200 {string} string "{"success":true,"data":{},"msg":"发送成功"}"
-// @Router /wxpay/routerName [post]
+// @Router /wxpay/payjsapi [post]
 func (p *WxPay) WxApiJsApi(c *gin.Context) {
 	var plug *request.Jsapi
 	err := c.ShouldBindQuery(&plug)
